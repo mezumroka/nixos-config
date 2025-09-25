@@ -23,6 +23,11 @@
       update = "sudo nixos-rebuild switch";
     };
     history.size = 10000;
+    oh-my-zsh = { 
+      enable = true;
+      plugins = [ "git" "thefuck" "sudo" ];
+      theme = "robbyrussell";
+    };
   };
   
   programs.git = {

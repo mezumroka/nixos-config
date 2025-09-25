@@ -9,7 +9,7 @@
     [ # Include the results of the hardware scan.
       ./hardware-configuration.nix
     ];
-
+  nixpkgs.config.allowUnfree = true;
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
 
   # Use the systemd-boot EFI boot loader.
@@ -42,10 +42,35 @@
   services.xserver.enable = true;
   services.xserver.videoDrivers = [ "amdgpu" ];
   services.desktopManager.plasma6.enable = true;
+  services.displayManager.defaultSession = "plasma";
   services.displayManager.sddm.enable = true;
   services.displayManager.sddm.wayland.enable = true;
   services.displayManager.sddm.settings.General.DisplayServer = "wayland";
-  
+  # Einstellungen für Displaylink (usb monitor)
+  environment.variables = {
+    KWIN_DRM_PREFER_COLOR_DEPTH = "24";
+  };  
+  # --- THIS IS THE CRUCIAL PART FOR ENABLING THE SERVICE ---
+  systemd.services.displaylink-server = {
+    enable = true;
+    # Ensure it starts after udev has done its work
+    requires = [ "systemd-udevd.service" ];
+    after = [ "systemd-udevd.service" ];
+    wantedBy = [ "multi-user.target" ]; # Start at boot
+    # *** THIS IS THE CRITICAL 'serviceConfig' BLOCK ***
+    serviceConfig = {
+      Type = "simple"; # Or "forking" if it forks (simple is common for daemons)
+      # The ExecStart path points to the DisplayLinkManager binary provided by the package
+      ExecStart = "${pkgs.displaylink}/bin/DisplayLinkManager";
+      # User and Group to run the service as (root is common for this type of daemon)
+      User = "root";
+      Group = "root";
+      # Environment variables that the service itself might need
+      # Environment = [ "DISPLAY=:0" ]; # Might be needed in some cases, but generally not for this
+      Restart = "on-failure";
+      RestartSec = 5; # Wait 5 seconds before restarting
+    };
+  };
 
   # Configure keymap in X11
   services.xserver.xkb.layout = "de";
@@ -54,6 +79,13 @@
 
   # Enable CUPS to print documents.
   services.printing.enable = true;
+  services.avahi = {
+    enable = true;
+    nssmdns4 = true;
+    openFirewall = true;
+  };
+  hardware.sane.enable = true; # enables support for SANE scanners
+  hardware.sane.extraBackends = [ pkgs.epsonscan2 ];
 
   # Enable sound.
   # services.pulseaudio.enable = true;
@@ -72,8 +104,13 @@
   # Define a user account. Don't forget to set a password with ‘passwd’.
   users.users.er = {
     isNormalUser = true;
-    extraGroups = [ "wheel" "networkmanager" "podman" "docker" ]; # Enable ‘sudo’ for the user.
+    extraGroups = [ "wheel" "networkmanager" "podman" "docker" "scanner" "lp" ]; # Enable ‘sudo’ for the user.
   };
+
+  #shell
+  programs.zsh.enable = true;
+  users.defaultUserShell = pkgs.zsh;
+
     
   programs.firefox.enable = true;
 
@@ -82,6 +119,8 @@
   environment.systemPackages = with pkgs; [
     vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
     wget
+    epson-escpr2 # Drucker
+    epsonscan2
     git
     bat
     usbutils
@@ -89,6 +128,7 @@
     nvme-cli
     clinfo
     tree
+    displaylink
     kdePackages.bluedevil
     # KDE
     kdePackages.discover
@@ -101,6 +141,7 @@
     kdePackages.sddm-kcm
     kdePackages.isoimagewriter
     kdePackages.partitionmanager
+    kdePackages.krdc
     kdiff3
     hardinfo2
     vlc
@@ -110,6 +151,7 @@
     vulkan-tools
     sysbench
     julia-mono
+    eduvpn-client
   ];
 
   # Some programs need SUID wrappers, can be configured further or are
