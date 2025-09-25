@@ -39,9 +39,12 @@
   };
 
   # Enable the X11 windowing system.
-#  services.xserver.enable = true;
-
-
+  services.xserver.enable = true;
+  services.xserver.videoDrivers = [ "amdgpu" ];
+  services.desktopManager.plasma6.enable = true;
+  services.displayManager.sddm.enable = true;
+  services.displayManager.sddm.wayland.enable = true;
+  services.displayManager.sddm.settings.General.DisplayServer = "wayland";
   
 
   # Configure keymap in X11
@@ -55,10 +58,13 @@
   # Enable sound.
   # services.pulseaudio.enable = true;
   # OR
-  # services.pipewire = {
-  #   enable = true;
-  #   pulse.enable = true;
-  # };
+  security.rtkit.enable = true;  
+  services.pipewire = {
+    enable = true;
+    pulse.enable = true;
+    alsa.enable = true;
+    alsa.support32Bit = true;
+  };
 
   # Enable touchpad support (enabled default in most desktopManager).
   # services.libinput.enable = true;
@@ -69,7 +75,7 @@
     extraGroups = [ "wheel" "networkmanager" "podman" "docker" ]; # Enable ‘sudo’ for the user.
   };
     
-  # programs.firefox.enable = true;
+  programs.firefox.enable = true;
 
   # List packages installed in system profile.
   # You can use https://search.nixos.org/ to find more packages (and options).
@@ -78,7 +84,32 @@
     wget
     git
     bat
+    usbutils
+    pciutils
+    nvme-cli
+    clinfo
     tree
+    kdePackages.bluedevil
+    # KDE
+    kdePackages.discover
+    kdePackages.kcalc
+    kdePackages.kcharselect
+    kdePackages.kclock
+    kdePackages.kcolorchooser
+    kdePackages.kolourpaint
+    kdePackages.ksystemlog
+    kdePackages.sddm-kcm
+    kdePackages.isoimagewriter
+    kdePackages.partitionmanager
+    kdiff3
+    hardinfo2
+    vlc
+    wayland-utils
+    wl-clipboard
+    sourcegit
+    vulkan-tools
+    sysbench
+    julia-mono
   ];
 
   # Some programs need SUID wrappers, can be configured further or are
